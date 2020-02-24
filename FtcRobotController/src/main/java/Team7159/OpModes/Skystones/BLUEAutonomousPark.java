@@ -1,49 +1,28 @@
 package Team7159.OpModes.Skystones;
 
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
 import Team7159.ComplexRobots.DR4BBotV1;
-import Team7159.ComplexRobots.DR4BBotV1point5;
 import Team7159.Enums.Direction;
 
-@Autonomous(name = "BLUEAutonomousFoundation")
-public class BLUEAutonomousFoundation extends LinearOpMode {
+import org.firstinspires.ftc.robotcore.external.ClassFactory;
 
-    private DR4BBotV1point5 robot = new DR4BBotV1point5();
+@Autonomous(name = "BLUEAutonomousPark")
+public class BLUEAutonomousPark extends LinearOpMode {
+
+    private DR4BBotV1 robot = new DR4BBotV1();
 
     @Override
     public void runOpMode() {
         robot.init(hardwareMap);
 
-        robot.leftLiftServo.setPosition(1);
-        robot.rightLiftServo.setPosition(0);
-
-        robot.leftFoundationServo.setPosition(0);
-        robot.rightFoundationServo.setPosition(0.8);
-
         waitForStart();
 
-        drive(-0.25, 1);
-        strafe2(Direction.RIGHT, 0.5, 3);
-        drive(-0.25, 1.25);
-
-        robot.leftFoundationServo.setPosition(1);
-        robot.rightFoundationServo.setPosition(0);
-        sleep(750);
-        robot.LFMotor.setPower(0.25);
-        robot.RFMotor.setPower(0.4);
-        robot.LBMotor.setPower(0.25);
-        robot.RBMotor.setPower(0.4);
-        sleep(3750);
-        robot.leftFoundationServo.setPosition(0);
-        robot.rightFoundationServo.setPosition(0.8);
-        sleep(500);
-        drive(0.25, 0.75);
-        sleep(750);
-        strafe2(Direction.LEFT, 0.5, 2);
-//        drive(-0.25, 0.5);
-        strafe2(Direction.LEFT, 0.5, 2);
+        drive(-0.25, 0.1);
+        strafe2(Direction.RIGHT, 0.35, 5);
+        sleep(2000);
     }
 
     private void drive(double pow, double time) {

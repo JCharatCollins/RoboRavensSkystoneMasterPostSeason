@@ -2,74 +2,102 @@ package org.firstinspires.ftc.teamcode;
 
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
 
 import Team7159.ComplexRobots.DR4BBotV1;
-import Team7159.ComplexRobots.DR4BBotV2;
+import Team7159.ComplexRobots.DR4BBotV1point5;
 
 @com.qualcomm.robotcore.eventloop.opmode.TeleOp(name="TeleOpSkystonesV3")
 public class TeleOpSkystonesV3 extends LinearOpMode {
 
     //We make the robot
-    private DR4BBotV2 robot = new DR4BBotV2();
+    private DR4BBotV1point5 robot = new DR4BBotV1point5();
+
+    public static int magicNumber = 1440;
+
+    public boolean clawClosed = true;
+
+    public boolean foundClosed = false;
 
     @Override
     public void runOpMode() {
         //Initializes the hardware map (i.e. configuration)
         robot.init(hardwareMap);
+
+        //resets lift encoders so all the way down is 0 ticks
+        robot.rightLiftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        robot.leftLiftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        int liftHeight = 0;
+        //used to keep lift at a certain height without constant motor running
+        int lastLiftHeight = 0;
+
+        //servos move on init
+        robot.leftFoundationServo.setPosition(0);
+        robot.rightFoundationServo.setPosition(1);
+
+        robot.leftLiftServo.setPosition(0);
+        robot.rightLiftServo.setPosition(1);
+
         waitForStart();
 
-        int targetLiftPos = 0;
-
         while (opModeIsActive()) {
-
-            //Controls the lift motors
+            //Controls the target lift height
             if(gamepad1.a) {
-                if(gamepad1.right_trigger>0.5){
-                    targetLiftPos -= 0.05;
-                } else {
-
-                }
+                liftHeight -= 5 - (2*gamepad1.right_trigger);
+//                telemetry.addData("A", "A Pressed");
             }
             if(gamepad1.y) {
-                if(gamepad1.right_trigger>0.5){
-                    targetLiftPos += 0.05;
-                } else {
-                    targetLiftPos += 0.1;
-                }
-            }
-            robot.leftLiftMotor.setTargetPosition(targetLiftPos);
-            robot.rightLiftMotor.setTargetPosition(targetLiftPos);
-
-            if(targetLiftPos<0) {
-                targetLiftPos = 0;
-            }
-            if(targetLiftPos>1) {
-                targetLiftPos = 1;
+                liftHeight += 5 - (2*gamepad1.right_trigger);
+//                telemetry.addData("Y", "Y Pressed");
             }
 
-            robot.rightLiftMotor.setTargetPosition(targetLiftPos);
+            //prevents ticks from being negative
+            if (liftHeight<0) {
+                liftHeight =0;
+            } else if (liftHeight > magicNumber) {
+                liftHeight = magicNumber;
+            }
+//            if (lastLiftHeight == liftHeight) {
+//                //don't adjust motors
+//            } else {
+//                //adjust motors
+//                robot.leftLiftMotor.setTargetPosition(liftHeight);
+//                robot.rightLiftMotor.setTargetPosition(liftHeight);
+//            }
+//
+//            //to balance out power
+//            robot.leftLiftMotor.setPower(1);
+//            robot.rightLiftMotor.setPower(1);
+//            //run the motors
+//            if (liftHeight == robot.leftLiftMotor.getCurrentPosition() && liftHeight == robot.rightLiftMotor.getCurrentPosition()) {
+//
+//            } else {
+//                robot.leftLiftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+//                robot.rightLiftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+//            }
+            telemetry.addData(" ", robot.rightLiftMotor.getCurrentPosition());
+            telemetry.update();
+            if (robot.rightLiftMotor.getCurrentPosition() != liftHeight) {
+                robot.rightLiftMotor.setTargetPosition(liftHeight);
+                robot.rightLiftMotor.setPower(1);
+                robot.rightLiftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            }
+
+            if (robot.leftLiftMotor.getCurrentPosition() != liftHeight) {
+                robot.leftLiftMotor.setTargetPosition(liftHeight);
+                robot.leftLiftMotor.setPower(1);
+                robot.leftLiftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            }
+
+            //reassign the last lift height
+
             //Controls the lift servos (Claw thing)
-            if(gamepad1.x) {
-                if(robot.leftLiftServo.getPosition()==1 && robot.rightLiftServo.getPosition()==1) {
-                    robot.leftLiftServo.setPosition(0);
-                    robot.rightLiftServo.setPosition(0);
-                } else if(robot.leftLiftServo.getPosition()==0 && robot.rightLiftServo.getPosition()==0) {
-                    robot.leftLiftServo.setPosition(1);
-                    robot.rightLiftServo.setPosition(1);
-                }
+            if (gamepad1.x) {
+                robot.leftLiftServo.setPosition(0);
+                robot.rightLiftServo.setPosition(1);
             }
             if(gamepad1.b) {
-                if(robot.leftFoundationServo.getPosition()==1 && robot.rightFoundationServo.getPosition()==1) {
-                    robot.leftFoundationServo.setPosition(0);
-                    robot.rightFoundationServo.setPosition(0);
-                } else if(robot.leftFoundationServo.getPosition()==0 && robot.rightFoundationServo.getPosition()==0) {
-                    robot.leftFoundationServo.setPosition(1);
-                    robot.rightFoundationServo.setPosition(1);
-                }
-            }
-            //Input cleaning
-            if(gamepad1.a && gamepad1.b) {
-                robot.leftLiftServo.setPosition(0);
+                robot.leftLiftServo.setPosition(1);
                 robot.rightLiftServo.setPosition(0);
             }
 
@@ -109,7 +137,7 @@ public class TeleOpSkystonesV3 extends LinearOpMode {
                 robot.LBMotor.setPower(powL * accel);
             }
 
-            //Spinny funny
+            //Tank rotation for the robot
             if(gamepad1.right_bumper) {
                 if(gamepad1.left_trigger>0.5) {
                     robot.RFMotor.setPower(-0.5);
@@ -136,7 +164,7 @@ public class TeleOpSkystonesV3 extends LinearOpMode {
                     robot.LBMotor.setPower(-1);
                 }
             }
-            //Input cleaning
+            //Input cleaning (no weird priority)
             if(gamepad1.right_bumper && gamepad1.left_bumper) {
                 robot.RFMotor.setPower(0);
                 robot.LFMotor.setPower(0);

@@ -13,71 +13,116 @@ public class TeleOpSkystonesV2point5 extends LinearOpMode {
     //We make the robot
     private DR4BBotV1point5 robot = new DR4BBotV1point5();
 
-    public static int magicNumber = 5000;
+    public static int magicNumber = 1440;
 
+    public boolean clawClosed = true;
+
+    public boolean foundClosed = false;
+
+    public int clawCooldown = 0;
+
+    public int clawSpecificPos = 3;
 
     @Override
     public void runOpMode() {
         //Initializes the hardware map (i.e. configuration)
         robot.init(hardwareMap);
 
+        //resets lift encoders so all the way down is 0 ticks
         robot.rightLiftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         robot.leftLiftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-
-        int liftHeight = 0; //it does the swag
+        int liftHeight = 0;
+        //used to keep lift at a certain height without constant motor running
         int lastLiftHeight = 0;
+
+        //servos move on init
+        robot.leftFoundationServo.setPosition(0);
+        robot.rightFoundationServo.setPosition(1);
+
+        robot.leftLiftServo.setPosition(0);
+        robot.rightLiftServo.setPosition(1);
+
         waitForStart();
 
         while (opModeIsActive()) {
-            robot.leftFoundationServo.setPosition(0);
-            robot.rightFoundationServo.setPosition(0);
-
-            //Controls the lift motors
+            //used to work around the 1f inputs required for the claw
+            clawCooldown -= 1;
+            //Controls the target lift height
             if(gamepad1.a) {
-                liftHeight -= 10 - (5*gamepad1.right_trigger);
+                liftHeight -= 5 - (2*gamepad1.right_trigger);
 //                telemetry.addData("A", "A Pressed");
             }
             if(gamepad1.y) {
-                liftHeight += 10 - (5*gamepad1.right_trigger);
+                liftHeight += 5 - (2*gamepad1.right_trigger);
 //                telemetry.addData("Y", "Y Pressed");
             }
 
+            //prevents ticks from being negative
             if (liftHeight<0) {
                 liftHeight =0;
             } else if (liftHeight > magicNumber) {
                 liftHeight = magicNumber;
             }
-            if (lastLiftHeight == liftHeight) {
-
-            } else {
-                robot.leftLiftMotor.setTargetPosition(liftHeight);
+//            if (lastLiftHeight == liftHeight) {
+//                //don't adjust motors
+//            } else {
+//                //adjust motors
+//                robot.leftLiftMotor.setTargetPosition(liftHeight);
+//                robot.rightLiftMotor.setTargetPosition(liftHeight);
+//            }
+//
+//            //to balance out power
+//            robot.leftLiftMotor.setPower(1);
+//            robot.rightLiftMotor.setPower(1);
+//            //run the motors
+//            if (liftHeight == robot.leftLiftMotor.getCurrentPosition() && liftHeight == robot.rightLiftMotor.getCurrentPosition()) {
+//
+//            } else {
+//                robot.leftLiftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+//                robot.rightLiftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+//            }
+            if (robot.rightLiftMotor.getCurrentPosition() != liftHeight) {
                 robot.rightLiftMotor.setTargetPosition(liftHeight);
+                robot.rightLiftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             }
-//            telemetry.addData("Lift Height", liftHeight);
-//            telemetry.update();
-            robot.leftLiftMotor.setPower(0.5);
-            robot.rightLiftMotor.setPower(0.5);
-            robot.leftLiftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            robot.rightLiftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            lastLiftHeight = liftHeight;
+
+            if (robot.leftLiftMotor.getCurrentPosition() != liftHeight) {
+                robot.leftLiftMotor.setTargetPosition(liftHeight);
+                robot.leftLiftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            }
+
+            //reassign the last lift height
 
             //Controls the lift servos (Claw thing)
-            if(gamepad1.x) {
-                if(robot.leftLiftServo.getPosition()>0.70 && robot.rightLiftServo.getPosition()<0.30) {
-                    robot.leftLiftServo.setPosition(0.75);
-                    robot.rightLiftServo.setPosition(0.25);
-                } else if(robot.leftLiftServo.getPosition()<0.30 && robot.rightLiftServo.getPosition()>0.70) {
-                    robot.leftLiftServo.setPosition(0.25);
-                    robot.rightLiftServo.setPosition(0.75);
+            //prevents 1f inputs from being required
+            if (gamepad1.right_trigger<0.5) {
+                if (clawCooldown <= 0) {
+                    if (gamepad1.x) {
+                        if (clawClosed) {
+                            robot.leftLiftServo.setPosition(0);
+                            robot.rightLiftServo.setPosition(1);
+                            clawClosed = false;
+                            clawCooldown = 500;
+                        } else {
+                            robot.leftLiftServo.setPosition(1);
+                            robot.rightLiftServo.setPosition(0);
+                            clawClosed = true;
+                            clawCooldown = 500;
+                        }
+                    }
                 }
             }
+            //supposed to control back things
+            //TODO: Fix this
             if(gamepad1.b) {
-                if(robot.leftFoundationServo.getPosition()>0.70 && robot.rightFoundationServo.getPosition()<0.30) {
-                    robot.leftFoundationServo.setPosition(0.75);
-                    robot.rightFoundationServo.setPosition(0.25);
-                } else if(robot.leftFoundationServo.getPosition()<0.30 && robot.rightFoundationServo.getPosition()>0.70) {
-                    robot.leftFoundationServo.setPosition(0.25);
-                    robot.rightFoundationServo.setPosition(0.75);
+                if(foundClosed) {
+                    robot.leftFoundationServo.setPosition(1);
+                    robot.rightFoundationServo.setPosition(0);
+                    clawClosed = false;
+                } else if(!foundClosed) {
+                    robot.leftFoundationServo.setPosition(0);
+                    robot.rightFoundationServo.setPosition(1);
+                    clawClosed = true;
                 }
             }
 
@@ -117,7 +162,7 @@ public class TeleOpSkystonesV2point5 extends LinearOpMode {
                 robot.LBMotor.setPower(powL * accel);
             }
 
-            //Spinny funny
+            //Tank rotation for the robot
             if(gamepad1.right_bumper) {
                 if(gamepad1.left_trigger>0.5) {
                     robot.RFMotor.setPower(-0.5);
@@ -144,7 +189,7 @@ public class TeleOpSkystonesV2point5 extends LinearOpMode {
                     robot.LBMotor.setPower(-1);
                 }
             }
-            //Input cleaning
+            //Input cleaning (no weird priority)
             if(gamepad1.right_bumper && gamepad1.left_bumper) {
                 robot.RFMotor.setPower(0);
                 robot.LFMotor.setPower(0);
