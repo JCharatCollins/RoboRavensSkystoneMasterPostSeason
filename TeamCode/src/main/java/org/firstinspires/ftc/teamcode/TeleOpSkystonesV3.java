@@ -4,8 +4,8 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 
-import Team7159.ComplexRobots.DR4BBotV1;
 import Team7159.ComplexRobots.DR4BBotV1point5;
+import Team7159.Enums.Direction;
 
 @com.qualcomm.robotcore.eventloop.opmode.TeleOp(name="TeleOpSkystonesV3")
 public class TeleOpSkystonesV3 extends LinearOpMode {
@@ -13,25 +13,30 @@ public class TeleOpSkystonesV3 extends LinearOpMode {
     //We make the robot
     private DR4BBotV1point5 robot = new DR4BBotV1point5();
 
-    public static int magicNumber = 1440;
+    //This is the magic number that defines how many ticks are in an encoder
+    private static int magicNumber = 1440;
 
-    public boolean clawClosed = true;
+    private boolean clawClosed = true;
 
-    public boolean foundClosed = false;
+    private int clawCooldown = 0;
+
+    private int foundationCooldown = 0;
+
+    private boolean foundClosed = false;
 
     @Override
     public void runOpMode() {
-        //Initializes the hardware map (i.e. configuration)
+        //Initializes the hardware map using the active configurations
         robot.init(hardwareMap);
 
-        //resets lift encoders so all the way down is 0 ticks
+        //Resets lift encoders so their current position is set to 0 ticks.
         robot.rightLiftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         robot.leftLiftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        int liftHeight = 0;
-        //used to keep lift at a certain height without constant motor running
-        int lastLiftHeight = 0;
 
-        //servos move on init
+        //Sets the lift height as 0 to match the ticks.
+        int liftHeight = 0;
+
+        //Servos move on initialization to open position
         robot.leftFoundationServo.setPosition(0);
         robot.rightFoundationServo.setPosition(1);
 
@@ -41,7 +46,10 @@ public class TeleOpSkystonesV3 extends LinearOpMode {
         waitForStart();
 
         while (opModeIsActive()) {
-            //Controls the target lift height
+            //Used to prevent claw inputs from being registered extremely rapidly, which would prevent the claw from moving at all. Decrements the cooldown by 1 every loop.
+            clawCooldown -= 1;
+
+            //Increments/decrements the target lift height based on both inputs from the A and Y buttons and the right trigger (which is used to slow down movement)
             if(gamepad1.a) {
                 liftHeight -= 5 - (2*gamepad1.right_trigger);
 //                telemetry.addData("A", "A Pressed");
@@ -51,56 +59,56 @@ public class TeleOpSkystonesV3 extends LinearOpMode {
 //                telemetry.addData("Y", "Y Pressed");
             }
 
-            //prevents ticks from being negative
+            //Sets bound on ticks so that it can't go outside the maximum motor ticks or below 0.
             if (liftHeight<0) {
                 liftHeight =0;
             } else if (liftHeight > magicNumber) {
                 liftHeight = magicNumber;
             }
-//            if (lastLiftHeight == liftHeight) {
-//                //don't adjust motors
-//            } else {
-//                //adjust motors
-//                robot.leftLiftMotor.setTargetPosition(liftHeight);
-//                robot.rightLiftMotor.setTargetPosition(liftHeight);
-//            }
-//
-//            //to balance out power
-//            robot.leftLiftMotor.setPower(1);
-//            robot.rightLiftMotor.setPower(1);
-//            //run the motors
-//            if (liftHeight == robot.leftLiftMotor.getCurrentPosition() && liftHeight == robot.rightLiftMotor.getCurrentPosition()) {
-//
-//            } else {
-//                robot.leftLiftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-//                robot.rightLiftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-//            }
-            telemetry.addData(" ", robot.rightLiftMotor.getCurrentPosition());
-            telemetry.update();
+
+            //If the individual motor's current tick position is not equal to its target, it is readjusted.
             if (robot.rightLiftMotor.getCurrentPosition() != liftHeight) {
                 robot.rightLiftMotor.setTargetPosition(liftHeight);
                 robot.rightLiftMotor.setPower(1);
                 robot.rightLiftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             }
-
             if (robot.leftLiftMotor.getCurrentPosition() != liftHeight) {
                 robot.leftLiftMotor.setTargetPosition(liftHeight);
                 robot.leftLiftMotor.setPower(1);
                 robot.leftLiftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             }
 
-            //reassign the last lift height
-
-            //Controls the lift servos (Claw thing)
-            if (gamepad1.x) {
-                robot.leftLiftServo.setPosition(0);
-                robot.rightLiftServo.setPosition(1);
+            //If the claw cooldown is up, then it allows the claw to move based on its current position.
+            if (clawCooldown <= 0) {
+                if (gamepad1.x) {
+                    if (clawClosed) {
+                        robot.leftLiftServo.setPosition(0);
+                        robot.rightLiftServo.setPosition(1);
+                        clawClosed = false;
+                        clawCooldown = 500;
+                    } else {
+                        robot.leftLiftServo.setPosition(1);
+                        robot.rightLiftServo.setPosition(0);
+                        clawClosed = true;
+                        clawCooldown = 500;
+                    }
+                }
             }
-            if(gamepad1.b) {
-                robot.leftLiftServo.setPosition(1);
-                robot.rightLiftServo.setPosition(0);
-            }
 
+            //If the foundation cooldown is up, then it allows the foundation servos to move based on their current position.
+            if (foundationCooldown <= 0) {
+                if (gamepad1.b) {
+                    if (foundClosed) {
+                        robot.leftFoundationServo.setPosition(1);
+                        robot.rightFoundationServo.setPosition(0);
+                        foundClosed = false;
+                    } else {
+                        robot.leftFoundationServo.setPosition(0);
+                        robot.rightFoundationServo.setPosition(1);
+                        foundClosed = true;
+                    }
+                }
+            }
             //Left Stick--Acceleration
             double accel = -gamepad1.left_stick_y;
 

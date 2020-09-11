@@ -53,7 +53,6 @@ public class BasicMecanumSkystones {
 //      :crab: william is gone :crab:
     }
 
-    //i honestly don't know what this stuff is for so uhhHhHhH leave it in?
     public void moveStraight(double power) {
         LFMotor.setPower(power);
         RFMotor.setPower(power);

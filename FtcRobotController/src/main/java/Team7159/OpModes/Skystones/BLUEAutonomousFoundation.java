@@ -3,7 +3,6 @@ package Team7159.OpModes.Skystones;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
-import Team7159.ComplexRobots.DR4BBotV1;
 import Team7159.ComplexRobots.DR4BBotV1point5;
 import Team7159.Enums.Direction;
 
@@ -14,6 +13,7 @@ public class BLUEAutonomousFoundation extends LinearOpMode {
 
     @Override
     public void runOpMode() {
+        //initialize robot shenanigans
         robot.init(hardwareMap);
 
         robot.leftLiftServo.setPosition(1);
@@ -42,7 +42,7 @@ public class BLUEAutonomousFoundation extends LinearOpMode {
         drive(0.25, 0.75);
         sleep(750);
         strafe2(Direction.LEFT, 0.5, 2);
-//        drive(-0.25, 0.5);
+//        drive(-0.25, 0.5); yay cooperation!
         strafe2(Direction.LEFT, 0.5, 2);
     }
 
