@@ -13,7 +13,7 @@ public class BasicHolonomic {
 
     public void init(HardwareMap Map){
 
-        RFMotor = Map.dcMotor.get("frontRight");
+        //RFMotor = Map.dcMotor.get("frontRight");
         RBMotor = Map.dcMotor.get("backRight");
         LFMotor = Map.dcMotor.get("frontLeft");
         LBMotor = Map.dcMotor.get("backLeft");
